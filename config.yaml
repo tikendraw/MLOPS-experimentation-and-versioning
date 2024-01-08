@@ -1,0 +1,4 @@
+
+data_path : ./data
+train_data_file : ./data/train.csv
+test_data_file : ./data/test.csv
