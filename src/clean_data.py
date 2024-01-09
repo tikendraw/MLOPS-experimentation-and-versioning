@@ -1,72 +1,134 @@
 import logging
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
 import yaml
-from icecream import ic
+from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(filename='data_cleaning.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filemode='a')
 logger = logging.getLogger(__name__)
+logger.info(f"Started data preprocessing at {datetime.now()}.")
 
-# Load the configuration file
-config_path = Path.cwd()/'config.yaml'
-with open(config_path, 'r') as file:
-    config = yaml.safe_load(file)
+# Load the training data
+def load_data(file_path):
+    df = pd.read_csv(file_path)
+    return df
+
+# Display the first few rows of the dataframe
+def display_head(df):
+    return df.head()
+
+# Visualize missing data using missingno library
+def visualize_missing_data(df):
+    import missingno as msno
+    msno.matrix(df)
+
+# Remove columns with missing values exceeding a threshold
+def remove_high_null_columns(df, threshold=0.10):
+    null_percentage_count = {}
+    high_null_counts = []
     
-# print(config, type(config))
-# x = pd.read_csv(config['train_data_path'])
-
-def clean_data(input_path, output_path):
-    # Load the dataset
-    logger.info(f'input_paht: {input_path}')
-    logger.info(f'output_path: {output_path}')
-    
-    df = pd.read_csv(input_path)
-    rows, cols = df.shape
-    logger.info(f'data shape: {df.shape}')
-
-    # Drop duplicates
-    df.drop_duplicates(inplace=True)
-
-    # Handle missing values
-    def handle_missing_values(df):
-        # Identify and drop columns with a high percentage of missing values
-        threshold = 0.5
-        logger.info(threshold)
-        df = df[df.columns[df.isnull().mean() < threshold]]
-        new_rows, new_cols = df.shape
+    for column in df.columns:
+        x = df[column].isnull().sum() / df[column].shape[0]
+        null_percentage_count[column] = x
+        if x > threshold:
+            high_null_counts.append(column)
         
-        logger.info(f'Dropped {cols-new_cols} columns due to high null counts')
-
-        # Impute missing values in numerical columns with mean
-        numerical_cols = df.select_dtypes(include='number').columns
-        imputer = SimpleImputer(strategy='mean')
-        df[numerical_cols] = imputer.fit_transform(df[numerical_cols].to_numpy())
-
-        # Impute missing values in categorical columns with the most frequent value
-        categorical_cols = df.select_dtypes(exclude='number').columns
-        imputer = SimpleImputer(strategy='most_frequent')
-        df[categorical_cols] = imputer.fit_transform(df[categorical_cols].to_numpy())
-
-        return df
-
-    df = handle_missing_values(df)
-
-    # Handle categorical variables (convert to numerical using one-hot encoding)
-    df = pd.get_dummies(df, drop_first=True)
-
-    # Scale numerical features
-    numerical_cols = df.select_dtypes(include='number').columns
-    scaler = StandardScaler()
-    df[numerical_cols] = scaler.fit_transform(df[numerical_cols].to_numpy())
-
-    logger.info(f'preprocessed data shape: {df.shape}')
-    # Save the cleaned dataset
-    df.to_csv(output_path, index=False)
+        # print(f'{column:15} : {x}')
     
+    df.drop(high_null_counts, axis=1, inplace=True)
+    return df
 
-if __name__ == '__main__':
-    clean_data(config['train_data_file'], config['clean_train_data_filepath'])
+# Remove duplicate rows
+def remove_duplicates(df):
+    df.drop_duplicates(inplace=True)
+    return df
+
+# Display information about the dataframe
+def display_info(df):
+    df.info()
+
+# Display summary statistics of the dataframe
+def display_statistics(df):
+    df.describe()
+
+# Remove columns with high cardinality
+def remove_high_cardinality_columns(df, threshold=0.80):
+    cardinality_percentage_count = {}
+    high_cardinal_columns = []
     
+    for column in df.columns:
+        x = df[column].nunique() / df[column].shape[0]
+        cardinality_percentage_count[column] = x
+        if x > threshold:
+            high_cardinal_columns.append(column)
+        
+        # print(f'{column:15} : {x:.3f} : {df[column].dtype}')
+    
+    df.drop(high_cardinal_columns, axis=1, inplace=True)
+    return df
+
+# Separate categorical and numerical columns
+def separate_categorical_numerical(df):
+    cat_df = df.select_dtypes(exclude='number')
+    num_df = df.select_dtypes(include='number')
+    return cat_df, num_df
+
+# Display the number of unique values for each categorical column
+def display_categorical_unique_values(cat_df):
+    cat_df.nunique()
+
+# Your main processing function
+def main_processing(file_path):
+    df = load_data(file_path)
+    
+    # Data Cleaning
+    visualize_missing_data(df)
+    df = remove_high_null_columns(df)
+    df = remove_duplicates(df)
+    display_info(df)
+    display_statistics(df)
+    df = remove_high_cardinality_columns(df)
+    
+    # Preprocessing
+    cat_df, num_df = separate_categorical_numerical(df)
+    
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('impute_null_nums', SimpleImputer(strategy='mean'), num_df.columns),
+            ('impute_null_cats', SimpleImputer(strategy='most_frequent'), cat_df.columns),  # You can use other strategies as well
+
+            ('one_hot_encode', OneHotEncoder(), cat_df.columns)
+        ],
+        remainder='passthrough'
+    )
+
+    # Create a pipeline with the preprocessor
+    pipeline = Pipeline([
+        ('preprocessor', preprocessor)
+    ])
+
+    # Apply the preprocessing steps to your DataFrame
+    df_transformed = pipeline.fit_transform(df)
+
+    
+    # Additional preprocessing using sklearn's ColumnTransformer and other preprocessing classes
+    # Define your transformers and preprocessors here
+    
+    return df, df_transformed
+
+# Example usage
+if __name__=='__main__':
+    import os
+    file_path = 'data/train.csv'
+    print(os.getcwd())
+    df, df_transformed = main_processing(file_path)
+    print('DATAFRAME')
+    print(df.shape)
+    print('\n'*3)
+    print("TRANSFORMED")
+    print(df_transformed.shape)

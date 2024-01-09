@@ -1,2 +1,4 @@
 temp/
 data/train_clean.csv
+*.log
+**.log
