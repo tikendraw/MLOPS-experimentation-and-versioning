@@ -1,0 +1,5 @@
+outs:
+- md5: 26dcedac827a0ed15b803e402617ecb6
+  size: 70456
+  hash: md5
+  path: test.ipynb

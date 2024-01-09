@@ -1,5 +1,5 @@
 
 data_path : ./data
-train_data_file : ./data/train.csv
-test_data_file : ./data/test.csv
-clean_train_data_filepath : ./data/train_clean.csv
+train_filepath : ./data/train.csv
+test_filepath : ./data/test.csv
+preprocessed_train_filepath : ./data/preprocessed_train.csv
