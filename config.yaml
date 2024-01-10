@@ -3,3 +3,4 @@ data_path : ./data
 train_filepath : ./data/train.csv
 test_filepath : ./data/test.csv
 preprocessed_train_filepath : ./data/preprocessed_train.csv
+preprocessing_pipeline: ./models/preprocessing_pipeline.pkl
