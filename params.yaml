@@ -1,0 +1,3 @@
+data_cleaning:
+  null_threshold: 0.1
+  cardinality_threshold: 0.8
