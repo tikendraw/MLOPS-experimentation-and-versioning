@@ -3,13 +3,17 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
-import yaml
+from box import ConfigBox
+from icecream import ic
+from ruamel.yaml import YAML
+# import yaml
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
-logging.basicConfig(filename='data_cleaning.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filemode='a')
+# logging.basicConfig(filename='data_cleaning.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filemode='a')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.info(f"Started data preprocessing at {datetime.now()}.")
 
@@ -83,16 +87,16 @@ def display_categorical_unique_values(cat_df):
     cat_df.nunique()
 
 # Your main processing function
-def main_processing(file_path):
+def main_processing(file_path:str, params):
     df = load_data(file_path)
     
     # Data Cleaning
-    visualize_missing_data(df)
-    df = remove_high_null_columns(df)
+    # visualize_missing_data(df)
+    df = remove_high_null_columns(df, threshold=params.data_cleaning.null_threshold)
     df = remove_duplicates(df)
-    display_info(df)
-    display_statistics(df)
-    df = remove_high_cardinality_columns(df)
+    # display_info(df)
+    # display_statistics(df)
+    df = remove_high_cardinality_columns(df, threshold=params.data_cleaning.cardinality_threshold)
     
     # Preprocessing
     cat_df, num_df = separate_categorical_numerical(df)
@@ -104,31 +108,47 @@ def main_processing(file_path):
 
             ('one_hot_encode', OneHotEncoder(), cat_df.columns)
         ],
-        remainder='passthrough'
+        remainder='passthrough', 
+        verbose_feature_names_out=False,
     )
 
     # Create a pipeline with the preprocessor
     pipeline = Pipeline([
         ('preprocessor', preprocessor)
     ])
+    
+    
 
     # Apply the preprocessing steps to your DataFrame
     df_transformed = pipeline.fit_transform(df)
 
+    # Converting all the numpy data to pandas 
+    df_transformed = pd.DataFrame(df_transformed, columns = preprocessor.get_feature_names_out())
+    logger.info(f'Shape after Data Transformation: {df_transformed.shape} ')
+
+    # dropping the categorical value that has been one hot encoded
+    df_transformed.drop(cat_df.columns, axis = 1, inplace=True)
     
-    # Additional preprocessing using sklearn's ColumnTransformer and other preprocessing classes
-    # Define your transformers and preprocessors here
+    logger.info(f"Dropping old categorical columns after OneHotEncoding : {cat_df.columns}")
+    logger.info(f'Shape after dropping categorical columns: {df_transformed.shape} ')
     
-    return df, df_transformed
+    return df, df_transformed, preprocessor
 
 # Example usage
 if __name__=='__main__':
+    yaml = YAML(typ="safe")
+
+    params = ConfigBox(yaml.load(open("params.yaml", encoding="utf-8")))
+
     import os
     file_path = 'data/train.csv'
     print(os.getcwd())
-    df, df_transformed = main_processing(file_path)
+    df, df_transformed, preprocessor = main_processing(file_path, params=params)
     print('DATAFRAME')
+    print(type(df))
+
     print(df.shape)
-    print('\n'*3)
+    print('\n'*2)
     print("TRANSFORMED")
+    print(type(df_transformed))
     print(df_transformed.shape)
