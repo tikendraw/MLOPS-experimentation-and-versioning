@@ -5,3 +5,4 @@ data/train_clean.csv
 models/*
 data/*.csv
 /models
+src/__pycache__/
