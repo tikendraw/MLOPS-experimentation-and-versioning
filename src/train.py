@@ -1,20 +1,110 @@
-from sklearn.pipeline import Pipeline
-import pandas as pd
-import yaml
+import logging
+import pickle
+from datetime import datetime
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
+from box import ConfigBox
+from funcyou.utils import DotDict
+from ruamel.yaml import YAML
+from sklearn.base import BaseEstimator, RegressorMixin
+from sklearn.ensemble import (
+    GradientBoostingRegressor,
+    RandomForestRegressor,
+    VotingRegressor,
+)
+from sklearn.linear_model import (
+    GammaRegressor,
+    PassiveAggressiveRegressor,
+    PoissonRegressor,
+)
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from utils import get_score, timeit
 
 # Load the configuration file
 config_path = Path.cwd() / 'config.yaml'
-with open(config_path, 'r') as file:
-    config = yaml.safe_load(file)
 
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+logger.info(f"Started data preprocessing at {datetime.now()}.")
 
 # read the data
 
-input_path = config['preprocessed_train_filepath']
+# Data Loading
+def load_data(file_path:str | Path):
+    return pd.read_csv(file_path)
 
-# read the house price prediction dataset
-x = pd.read_csv(input_path)
-traget_column = 'SalePrice'
 
-# make a sklearn pipe line to predict house price 
+def get_model(model_params):
+    
+    
+    return VotingRegressor(
+    estimators=[
+        ('gradient_boosting_regression',GradientBoostingRegressor()), 
+        ('random_forest_regression',RandomForestRegressor()), 
+        ('poisson_regression',PoissonRegressor()), 
+        ('gamma_regression',GammaRegressor()), 
+        ('passive_aggressive_regression',PassiveAggressiveRegressor())
+        ],
+    n_jobs=-1
+    )
+    
+
+@timeit
+def train(model_params:DotDict, X:pd.DataFrame, y:pd.DataFrame) -> tuple[RegressorMixin]:
+    model = get_model(model_params=model_params)
+    pipeline = Pipeline([
+        ('scaler',StandardScaler()),
+        ('voting_regressor', model)
+    ])
+
+    pipeline.fit(X, y=y)
+    
+    return pipeline
+
+# make a sklearn pipe line to predict house price     model_params= get_model_params()
+
+
+# Execution
+if __name__ == '__main__':
+    yaml = YAML(typ="safe")
+    config_path = "config.yaml"
+    params_path = "params.yaml"
+    # Load config and params
+    config = DotDict.from_yaml(config_path)
+    params = DotDict.from_yaml(params_path)
+    
+    target_column = params.base.target
+    model_params = params.model.params
+    
+    print(type(params.model))
+    print(type(params.model.name))
+    # Preprocess the data    
+    df = load_data(file_path=config.preprocessed_train_filepath)
+    
+    # Split the data
+    xtrain, xtest, ytrain, ytest = train_test_split(
+        df.drop(target_column, axis = 1),
+        df[target_column],
+        train_size=params.data_split.train_size,
+        test_size =params.data_split.test_size,
+        random_state = params.data_split.random_seed,    
+        )
+    
+    pipeline = train(model_params=model_params, X=xtrain, y=ytrain)
+    
+    print('Training Score: ', pipeline.score(xtrain, ytrain))
+    print('Testing Score : ', pipeline.score(xtest, ytest))
+
+    ypred = pipeline.predict(xtest)
+    scores = get_score(ytest=ytest, y_pred=ypred)
+    
+    print('Testing Metrics : ', scores)
+
+    # Save the model pipeline as a pickle 
+    with open(config.model_pipeline, 'wb') as file:
+        pickle.dump(pipeline, file) 

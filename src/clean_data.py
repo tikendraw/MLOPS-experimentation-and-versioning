@@ -115,7 +115,7 @@ def main_processing(file_path:str, params):
 
     
     # Removing high cardinality columns
-    original_df = remove_high_cardinality_columns(original_df, threshold=params.data_cleaning.cardinality_threshold)
+    # original_df = remove_high_cardinality_columns(original_df, threshold=params.data_cleaning.cardinality_threshold)
     
     # Separate categorical and numerical columns
     columns = get_categorical_numerical_columns(original_df)
