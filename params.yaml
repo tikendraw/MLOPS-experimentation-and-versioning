@@ -1,3 +1,72 @@
+base:
+  project-name: House_price_prediction
+  version: 1.0.0
+  target: SalePrice
+  model-type: Regression
+
 data_cleaning:
   null_threshold: 0.1
   cardinality_threshold: 0.8
+
+data_split:
+  train_size : 0.9
+  test_size : 0.1
+  random_seed : 42
+
+model:
+  name: voting_regressor
+  type: VotingRegressor
+  params:
+    estimators:
+      # models from sklearn.linear_model
+      - GradientBoostingRegressor
+      - RandomForestRegressor
+      - PoissonRegressor
+      - GammaRegressor
+      - PassiveAggressiveRegressor
+
+    estimators_params:
+      GradientBoostingRegressor:
+        n_estimators: 100
+        max_depth: 3
+        learning_rate: 0.1
+        subsample: 1.0
+        min_samples_split: 2
+        min_samples_leaf: 1
+        min_weight_fraction_leaf: 0.0
+        max_features: 'auto'
+        max_leaf_nodes: None
+
+      RandomForestRegressor:
+        n_estimators: 100
+        max_depth: 3
+        min_samples_split: 2
+        min_samples_leaf: 1
+        min_weight_fraction_leaf: 0.0
+        max_features: 'auto'
+        max_leaf_nodes: None
+
+      PoissonRegressor:
+        alpha: 1.0
+        max_iter: 100
+        tol: 0.0001
+        copy_X: True
+        fit_intercept: True
+        normalize: False
+      
+      GammaRegressor:
+        alpha: 1.0
+        max_iter: 100
+        tol: 0.0001
+        copy_X: True
+        fit_intercept: True
+        normalize: False
+      
+      PassiveAggressiveRegressor:
+        C: 1.0
+        max_iter: 1000
+        tol: 0.0001
+        fit_intercept: True
+        shuffle: True
+
+    
