@@ -3,7 +3,6 @@ stages:
     cmd: python src/clean_data.py
     deps:
       - data/train.csv
-      - data/train.csv.dvc
       - params.yaml
     outs:
       - data/preprocess/preprocessed_train.csv
