@@ -2,7 +2,7 @@ import logging
 import pickle
 from datetime import datetime
 from pathlib import Path
-
+import sys
 import numpy as np
 import pandas as pd
 from box import ConfigBox
@@ -80,9 +80,7 @@ if __name__ == '__main__':
     
     target_column = params.base.target
     model_params = params.model.params
-    
-    print(type(params.model))
-    print(type(params.model.name))
+
     # Preprocess the data    
     df = load_data(file_path=config.preprocessed_train_filepath)
     
@@ -97,13 +95,27 @@ if __name__ == '__main__':
     
     pipeline = train(model_params=model_params, X=xtrain, y=ytrain)
     
-    print('Training Score: ', pipeline.score(xtrain, ytrain))
-    print('Testing Score : ', pipeline.score(xtest, ytest))
+    from dvclive import Live
 
-    ypred = pipeline.predict(xtest)
-    scores = get_score(ytest=ytest, y_pred=ypred)
+    y_train_pred = pipeline.predict(xtrain)
+    y_test_pred = pipeline.predict(xtest)
     
-    print('Testing Metrics : ', scores)
+    train_scores = get_score(ytest=ytrain, y_pred=y_train_pred)
+    test_scores = get_score(ytest=ytest, y_pred=y_test_pred)
+
+    with Live(save_dvc_exp=True) as live:
+        live.log_metric("train score", pipeline.score(xtrain, ytrain))
+        live.log_metric("train mse", train_scores['mse'])
+        live.log_metric("train mae", train_scores["mae"])
+        live.log_metric("train r2 score", train_scores["r2"])
+            
+        live.log_metric("test score", pipeline.score(xtest, ytest))
+        live.log_metric("test mse", test_scores['mse'])
+        live.log_metric("test mae", test_scores["mae"])
+        live.log_metric("test r2 score", test_scores["r2"])
+            
+
+    
 
     # Save the model pipeline as a pickle 
     with open(config.model_pipeline, 'wb') as file:
