@@ -7,13 +7,13 @@ stages:
     outs:
       - data/preprocess/preprocessed_train.csv
 
-  # train_model:
-  #   cmd: python src/train.py
-  #   deps:
-  #     - data/preprocess/preprocessed_train.csv
-  #     - params.yaml
-  #   outs:
-  #     - model/model.pkl
+  train_model:
+    cmd: python src/train.py
+    deps:
+      - data/preprocess/preprocessed_train.csv
+      - params.yaml
+    outs:
+      - models/model_pipeline.pkl
 
   # evaluate_model:
   #   cmd: python src/evaluate.py
