@@ -6,3 +6,4 @@ models/*
 data/*.csv
 /models
 src/__pycache__/
+.vscode
