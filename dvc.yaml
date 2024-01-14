@@ -2,21 +2,26 @@ stages:
   clean_data:
     cmd: python src/clean_data.py
     deps:
-      - data/train.csv
-      - params.yaml
+    - data/train.csv
+    - params.yaml
     outs:
-      - data/preprocess/preprocessed_train.csv
+    - data/preprocess/preprocessed_train.csv
 
   train_model:
     cmd: python src/train.py
     deps:
-      - data/preprocess/preprocessed_train.csv
-      - params.yaml
+    - data/preprocess/preprocessed_train.csv
+    - params.yaml
     outs:
-      - models/model_pipeline.pkl
+    - models/model_pipeline.pkl
 
   # evaluate_model:
   #   cmd: python src/evaluate.py
   #   deps:
   #     - model/model.pkl
   #     # - data/preprocess/preprocess_test.csv
+metrics:
+- dvclive/metrics.json
+plots:
+- dvclive/plots/metrics:
+    x: step
