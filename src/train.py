@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from box import ConfigBox
+from DVCLive import Live
 from funcyou.utils import DotDict
 from ruamel.yaml import YAML
 from sklearn.base import BaseEstimator, RegressorMixin
@@ -14,6 +15,7 @@ from sklearn.ensemble import (GradientBoostingRegressor, RandomForestRegressor,
                               VotingRegressor)
 from sklearn.linear_model import (GammaRegressor, PassiveAggressiveRegressor,
                                   PoissonRegressor)
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
@@ -107,13 +109,20 @@ if __name__ == '__main__':
     #     live.log_metric("test mae", test_scores["mae"])
     #     live.log_metric("test r2 score", test_scores["r2"])
             
-    print("train score : ", pipeline.score(xtrain, ytrain))
-    print("train metrics: ", train_scores)
-    print()
-    print("Test score : ", pipeline.score(xtest, ytest))
-    print("Test metrics : ", test_scores)
-    
-    
+    # print("train score : ", pipeline.score(xtrain, ytrain))
+    # print("train metrics: ", train_scores)
+    # print()
+    # print("Test score : ", pipeline.score(xtest, ytest))
+    # print("Test metrics : ", test_scores)
+    with Live() as live:
+        live.log_metric("train/mse", mean_squared_error(ytrain, y_train_pred), plot=False)
+        live.log_metric("train/mae", mean_absolute_error(ytrain, y_train_pred), plot=False)
+        live.log_metric("train/r2", r2_score(ytrain, y_train_pred), plot=False)
+
+        live.log_metric("test/mse", mean_squared_error(ytest, y_test_pred), plot=False)
+        live.log_metric("test/mae", mean_absolute_error(ytest, y_test_pred), plot=False)
+        live.log_metric("test/r2", r2_score(ytest, y_test_pred), plot=False)
+
 
     # Save the model pipeline as a pickle 
     with open(config.model_pipeline, 'wb') as file:
