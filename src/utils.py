@@ -29,23 +29,25 @@ def timeit(func, logger=None, show_args_and_result=False):
 
 # get all metrics
 def get_score(ytest, y_pred):
+    mse = mae = r2 = np.nan
+
     try:
         mse = mean_squared_error(ytest, y_pred)
-    except:
-        mse = np.nan
-        
+    except Exception as e:
+        print(f"Error calculating MSE: {e}")
+
     try:
-        mae = mean_absolute_error(ytest, y_pred),
-    except:
-        mae = np.nan
-    
+        mae = mean_absolute_error(ytest, y_pred)
+    except Exception as e:
+        print(f"Error calculating MAE: {e}")
+
     try:
         r2 = r2_score(ytest, y_pred)
-    except:
-        r2 = np.nan
-    finally:
-        return {
-            'mse':mse,
-            'mae':mae,
-            'r2': r2
-        }
+    except Exception as e:
+        print(f"Error calculating R2: {e}")
+
+    return {
+        'mse': mse,
+        'mae': mae,
+        'r2': r2
+    }

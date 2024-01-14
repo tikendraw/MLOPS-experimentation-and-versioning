@@ -1,27 +1,23 @@
 import logging
 import pickle
+import sys
 from datetime import datetime
 from pathlib import Path
-import sys
+
 import numpy as np
 import pandas as pd
 from box import ConfigBox
 from funcyou.utils import DotDict
 from ruamel.yaml import YAML
 from sklearn.base import BaseEstimator, RegressorMixin
-from sklearn.ensemble import (
-    GradientBoostingRegressor,
-    RandomForestRegressor,
-    VotingRegressor,
-)
-from sklearn.linear_model import (
-    GammaRegressor,
-    PassiveAggressiveRegressor,
-    PoissonRegressor,
-)
+from sklearn.ensemble import (GradientBoostingRegressor, RandomForestRegressor,
+                              VotingRegressor)
+from sklearn.linear_model import (GammaRegressor, PassiveAggressiveRegressor,
+                                  PoissonRegressor)
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
+
 from utils import get_score, timeit
 
 # Load the configuration file
@@ -54,7 +50,7 @@ def get_model(model_params):
     )
     
 
-@timeit
+# @timeit
 def train(model_params:DotDict, X:pd.DataFrame, y:pd.DataFrame) -> tuple[RegressorMixin]:
     model = get_model(model_params=model_params)
     pipeline = Pipeline([
@@ -66,12 +62,9 @@ def train(model_params:DotDict, X:pd.DataFrame, y:pd.DataFrame) -> tuple[Regress
     
     return pipeline
 
-# make a sklearn pipe line to predict house price     model_params= get_model_params()
-
 
 # Execution
 if __name__ == '__main__':
-    yaml = YAML(typ="safe")
     config_path = "config.yaml"
     params_path = "params.yaml"
     # Load config and params
@@ -103,18 +96,23 @@ if __name__ == '__main__':
     train_scores = get_score(ytest=ytrain, y_pred=y_train_pred)
     test_scores = get_score(ytest=ytest, y_pred=y_test_pred)
 
-    with Live(save_dvc_exp=True) as live:
-        live.log_metric("train score", pipeline.score(xtrain, ytrain))
-        live.log_metric("train mse", train_scores['mse'])
-        live.log_metric("train mae", train_scores["mae"])
-        live.log_metric("train r2 score", train_scores["r2"])
+    # with Live(save_dvc_exp=True) as live:
+    #     live.log_metric("train score", pipeline.score(xtrain, ytrain))
+    #     live.log_metric("train mse", train_scores['mse'])
+    #     live.log_metric("train mae", train_scores["mae"])
+    #     live.log_metric("train r2 score", train_scores["r2"])
             
-        live.log_metric("test score", pipeline.score(xtest, ytest))
-        live.log_metric("test mse", test_scores['mse'])
-        live.log_metric("test mae", test_scores["mae"])
-        live.log_metric("test r2 score", test_scores["r2"])
+    #     live.log_metric("test score", pipeline.score(xtest, ytest))
+    #     live.log_metric("test mse", test_scores['mse'])
+    #     live.log_metric("test mae", test_scores["mae"])
+    #     live.log_metric("test r2 score", test_scores["r2"])
             
-
+    print("train score : ", pipeline.score(xtrain, ytrain))
+    print("train metrics: ", train_scores)
+    print()
+    print("Test score : ", pipeline.score(xtest, ytest))
+    print("Test metrics : ", test_scores)
+    
     
 
     # Save the model pipeline as a pickle 
